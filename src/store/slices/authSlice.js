@@ -1,10 +1,10 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const apiUrl = 'http://localhost:9090/auth/';
+const apiUrl = 'https://localhost:9090/auth/';
 
 export const loginUser = createAsyncThunk(
-    'account/addAccount',
+    'auth/loginUser',
     async (data, { rejectWithValue }) => {
         try {
             console.log('CALL API: ' + apiUrl + 'login');

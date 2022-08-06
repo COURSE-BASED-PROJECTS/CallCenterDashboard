@@ -1,7 +1,6 @@
 import {
     Flex,
     Table,
-    Checkbox,
     Tbody,
     Td,
     Text,
@@ -21,12 +20,14 @@ import {
 // Custom components
 import Card from 'components/card/Card';
 import Menu from 'components/menu/MainMenu';
-export default function CheckTable(props) {
+
+export default function TaxisTable(props) {
     const { columnsData, tableData } = props;
 
     const columns = useMemo(() => columnsData, [columnsData]);
     const data = useMemo(() => tableData, [tableData]);
-
+    console.log(columns);
+    console.log(data);
     const tableInstance = useTable(
         {
             columns,
@@ -45,7 +46,7 @@ export default function CheckTable(props) {
         prepareRow,
         initialState,
     } = tableInstance;
-    initialState.pageSize = 11;
+    initialState.pageSize = 10;
 
     const textColor = useColorModeValue('secondaryGray.900', 'white');
     const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -56,14 +57,14 @@ export default function CheckTable(props) {
             px='0px'
             overflowX={{ sm: 'scroll', lg: 'hidden' }}
         >
-            <Flex px='25px' justify='space-between' align='center'>
+            <Flex px='25px' justify='space-between' mb='20px' align='center'>
                 <Text
                     color={textColor}
                     fontSize='22px'
                     fontWeight='700'
                     lineHeight='100%'
                 >
-                    Check Table
+                    Danh sách xe taxi
                 </Text>
                 <Menu />
             </Flex>
@@ -105,27 +106,20 @@ export default function CheckTable(props) {
                             <Tr {...row.getRowProps()} key={index}>
                                 {row.cells.map((cell, index) => {
                                     let data = '';
-                                    if (cell.column.Header === 'NAME') {
+                                    if (cell.column.Header === 'MÃ XE') {
                                         data = (
                                             <Flex align='center'>
-                                                <Checkbox
-                                                    defaultChecked={
-                                                        cell.value[1]
-                                                    }
-                                                    colorScheme='brandScheme'
-                                                    me='10px'
-                                                />
                                                 <Text
                                                     color={textColor}
                                                     fontSize='sm'
                                                     fontWeight='700'
                                                 >
-                                                    {cell.value[0]}
+                                                    {cell.value}
                                                 </Text>
                                             </Flex>
                                         );
                                     } else if (
-                                        cell.column.Header === 'PROGRESS'
+                                        cell.column.Header === 'LOẠI XE'
                                     ) {
                                         data = (
                                             <Flex align='center'>
@@ -140,26 +134,32 @@ export default function CheckTable(props) {
                                             </Flex>
                                         );
                                     } else if (
-                                        cell.column.Header === 'QUANTITY'
+                                        cell.column.Header === 'CHỖ NGỒI'
                                     ) {
                                         data = (
-                                            <Text
-                                                color={textColor}
-                                                fontSize='sm'
-                                                fontWeight='700'
-                                            >
-                                                {cell.value}
-                                            </Text>
+                                            <Flex align='center'>
+                                                <Text
+                                                    color={textColor}
+                                                    fontSize='sm'
+                                                    fontWeight='700'
+                                                >
+                                                    {cell.value}
+                                                </Text>
+                                            </Flex>
                                         );
-                                    } else if (cell.column.Header === 'DATE') {
+                                    } else if (
+                                        cell.column.Header === 'BIỂN SỐ XE'
+                                    ) {
                                         data = (
-                                            <Text
-                                                color={textColor}
-                                                fontSize='sm'
-                                                fontWeight='700'
-                                            >
-                                                {cell.value}
-                                            </Text>
+                                            <Flex align='center'>
+                                                <Text
+                                                    color={textColor}
+                                                    fontSize='sm'
+                                                    fontWeight='700'
+                                                >
+                                                    {cell.value}
+                                                </Text>
+                                            </Flex>
                                         );
                                     }
                                     return (

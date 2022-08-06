@@ -1,5 +1,6 @@
-import React from 'react';
-
+import React, { useEffect, useState } from 'react';
+import Stomp from 'stompjs';
+import SockJS from 'sockjs-client';
 import { useColorModeValue } from '@chakra-ui/system';
 
 // Custom components
@@ -12,12 +13,15 @@ import {
     FormLabel,
     Input,
     InputGroup,
+    Link,
     Select,
     Spacer,
     Text,
 } from '@chakra-ui/react';
 import { ArrowForwardIcon } from '@chakra-ui/icons';
-import SelectInput from './SelectInput';
+import { MdOutlineGpsFixed } from 'react-icons/md';
+
+import { CreatableSelect } from 'chakra-react-select';
 
 const stateOptions = [
     { value: 'AL', label: 'Alabama' },
@@ -80,19 +84,123 @@ const stateOptions = [
     { value: 'WI', label: 'Wisconsin' },
     { value: 'WY', label: 'Wyoming' },
 ];
+let stompClient = null;
 
-export default function CallInfo(props) {
+export default function CallInfo() {
     const textColor = useColorModeValue('secondaryGray.900', 'white');
-    const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
 
-    const settingPicking = {
-        placeholder: 'Chọn/Nhập địa chỉ đón',
-        options: stateOptions,
+    const [packageInfo, setPackageInfo] = useState(null);
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [cusName, setCusNumber] = useState('');
+    const [arrivingAddr, setArrivingAddr] = useState('');
+    const [pickingAddr, setPickingAddr] = useState('');
+    const [lngPicking, setLngPicking] = useState('');
+    const [latPicking, setLatPicking] = useState('');
+    const [lngArriving, setLngArriving] = useState('');
+    const [latArriving, setLatArriving] = useState('');
+    const [carType, setCarType] = useState('');
+    const [distance, setDistance] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [cost, setCost] = useState(0);
+    const [bookingTime, setBookingTime] = useState(new Date());
+    const [isSent, setIsSent] = useState(false);
+
+    const handlePhoneNumber = (e) => setPhoneNumber(e.target.value);
+    const handleCusName = (e) => setCusNumber(e.target.value);
+    const handleArrivingAddr = (address = null, actionMeta = null) => {
+        setArrivingAddr(address.label);
     };
-    const settingArriving = {
-        placeholder: 'Chọn/Nhập địa chỉ đến',
-        options: stateOptions,
+    const handlePickingAddr = (address = null, actionMeta = null) => {
+        setPickingAddr(address.label);
     };
+    const handleLngPicking = (e) => setLngPicking(e.target.value);
+    const handleLatPicking = (e) => setLatPicking(e.target.value);
+    const handleLngArriving = (e) => setLngArriving(e.target.value);
+    const handleLatArriving = (e) => setLatArriving(e.target.value);
+    const handleCarType = (e) => setCarType(e.target.value);
+
+    const handleOnSubmit = () => {
+        setPackageInfo({
+            phoneNumber,
+            cusName,
+            arrivingAddr,
+            pickingAddr,
+            lngPicking,
+            latPicking,
+            lngArriving,
+            latArriving,
+            carType,
+            distance,
+            duration,
+            cost,
+            bookingTime,
+        });
+        console.log(packageInfo);
+    };
+    useEffect(() => {
+        const socket = new SockJS('http://localhost:8080/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, onConnected, onError);
+
+        return () => stompClient && stompClient.disconnect();
+    }, []);
+
+    const onConnected = () => {
+        console.log('onConnected');
+        stompClient.subscribe('/topic/public', onMessageReceived);
+    };
+
+    const onError = (error) => {
+        console.log(error);
+    };
+
+    const onMessageReceived = (payload) => {
+        console.log('onMessageReceived');
+        const message = JSON.parse(payload.body);
+        console.log(message);
+    };
+    useEffect(() => {
+        if (packageInfo && !isSent) {
+            stompClient.send(
+                '/app/order.sendOrder',
+                {},
+                JSON.stringify({
+                    sender: 'call_center',
+                    phoneNumber: phoneNumber,
+                    cusName: cusName,
+                    arrivingAddress: arrivingAddr,
+                    pickingAddress: pickingAddr,
+                    lngPickingAddr: lngPicking,
+                    latPickingAddr: latPicking,
+                    lngArrivingAddr: lngArriving,
+                    latArrivingAddr: latArriving,
+                    carType: carType,
+                    distance: distance,
+                    duration: duration,
+                    cost: cost,
+                    bookingTime: bookingTime,
+                    type: 'SENT',
+                })
+            );
+        }
+    }, [
+        phoneNumber,
+        cusName,
+        arrivingAddr,
+        pickingAddr,
+        lngPicking,
+        latPicking,
+        lngArriving,
+        latArriving,
+        carType,
+        distance,
+        duration,
+        cost,
+        bookingTime,
+        isSent,
+        packageInfo,
+    ]);
     return (
         <Card
             direction='column'
@@ -110,7 +218,7 @@ export default function CallInfo(props) {
                 me='auto'
                 mb={{ base: '20px', md: 'auto' }}
             >
-                <FormControl>
+                <FormControl isRequired>
                     <InputGroup mb='15px' width={'70%'}>
                         <Text
                             width={'20%'}
@@ -132,6 +240,8 @@ export default function CallInfo(props) {
                             size='lg'
                             color={textColor}
                             fontSize='34px'
+                            value={phoneNumber}
+                            onChange={handlePhoneNumber}
                         />
                     </InputGroup>
 
@@ -158,6 +268,8 @@ export default function CallInfo(props) {
                             mb='24px'
                             fontWeight={'bold'}
                             size='lg'
+                            value={cusName}
+                            onChange={handleCusName}
                         />
                         <Spacer />
 
@@ -178,14 +290,16 @@ export default function CallInfo(props) {
                             fontSize='md'
                             size='lg'
                             placeholder='Loại xe'
+                            onChange={handleCarType}
                         >
-                            <option value='option1'>Xe 4 chỗ</option>
-                            <option value='option2'>Xe 7 chỗ</option>
+                            <option value='4'>Xe 4 chỗ</option>
+                            <option value='7'>Xe 7 chỗ</option>
                         </Select>
                     </Flex>
 
                     <FormLabel
                         ms='4px'
+                        mt='8px'
                         fontSize='md'
                         fontWeight='600'
                         color={textColor}
@@ -194,20 +308,54 @@ export default function CallInfo(props) {
                         Địa chỉ đón
                     </FormLabel>
 
-                    <SelectInput {...settingPicking} />
+                    <CreatableSelect
+                        selectedOptionStyle='check'
+                        placeholder={'Chọn/Nhập địa chỉ đón'}
+                        size='lg'
+                        fontWeight={'bold'}
+                        fontSize='lg'
+                        onChange={handlePickingAddr}
+                        options={stateOptions}
+                        formatCreateLabel={(value) => `+ Thêm mới ${value}`}
+                    ></CreatableSelect>
 
-                    <FormLabel
+                    <Text
                         mt='10px'
                         ms='4px'
-                        mb='24px'
+                        mb='4px'
                         fontSize='md'
                         fontWeight='600'
                         color='green.500'
                         display='flex'
                     >
                         GPS
-                    </FormLabel>
-
+                    </Text>
+                    <Flex mb='30px'>
+                        <Input
+                            isRequired={true}
+                            variant='auth'
+                            fontSize='lg'
+                            type='text'
+                            placeholder='Kinh độ (lngPicking)'
+                            mr='24px'
+                            fontWeight={'bold'}
+                            size='lg'
+                            value={lngPicking}
+                            onChange={handleLngPicking}
+                        />
+                        <Input
+                            isRequired={true}
+                            variant='auth'
+                            fontSize='lg'
+                            type='text'
+                            placeholder='Vĩ độ (latPicking)'
+                            ml='24px'
+                            fontWeight={'bold'}
+                            size='lg'
+                            value={latPicking}
+                            onChange={handleLatPicking}
+                        />
+                    </Flex>
                     <FormLabel
                         ms='4px'
                         fontSize='md'
@@ -217,20 +365,72 @@ export default function CallInfo(props) {
                     >
                         Địa chỉ đến
                     </FormLabel>
-                    <SelectInput {...settingArriving} />
 
-                    <FormLabel
+                    <CreatableSelect
+                        // cacheOptions
+                        // defaultOptions
+                        // loadOptions={stateOptions}
+                        selectedOptionStyle='check'
+                        // isClearable
+                        isSearchable
+                        placeholder={'Chọn/Nhập địa chỉ đến'}
+                        size='lg'
+                        fontWeight={'bold'}
+                        fontSize='lg'
+                        onChange={handleArrivingAddr}
+                        options={stateOptions}
+                        formatCreateLabel={(value) => `+ Thêm mới ${value}`}
+                    ></CreatableSelect>
+
+                    <Text
                         mt='10px'
                         ms='4px'
-                        mb='24px'
+                        mb='4px'
                         fontSize='md'
                         fontWeight='600'
                         color='green.500'
                         display='flex'
                     >
                         GPS
-                    </FormLabel>
+                    </Text>
 
+                    <Flex mb='20px'>
+                        <Input
+                            variant='auth'
+                            fontSize='lg'
+                            type='text'
+                            placeholder='Kinh độ (lngArriving)'
+                            mr='24px'
+                            fontWeight={'bold'}
+                            size='lg'
+                            value={lngArriving}
+                            onChange={handleLngArriving}
+                        />
+                        <Input
+                            variant='auth'
+                            fontSize='lg'
+                            type='text'
+                            placeholder='Vĩ độ (latArriving)'
+                            ml='24px'
+                            fontWeight={'bold'}
+                            size='lg'
+                            value={latArriving}
+                            onChange={handleLatArriving}
+                        />
+                    </Flex>
+
+                    <Button
+                        colorScheme='whatsapp'
+                        fontSize='20px'
+                        fontWeight='bold'
+                        w='100%'
+                        h='50'
+                        mb='40px'
+                        mt='24px'
+                        leftIcon={<MdOutlineGpsFixed />}
+                    >
+                        <Link href='/gps'>Định vị GPS</Link>
+                    </Button>
                     <ButtonGroup w={'100%'} spacing='6'>
                         <Button
                             fontSize='20px'
@@ -250,6 +450,7 @@ export default function CallInfo(props) {
                             h='50'
                             mb='24px'
                             rightIcon={<ArrowForwardIcon />}
+                            onClick={handleOnSubmit}
                         >
                             Gửi đi
                         </Button>
