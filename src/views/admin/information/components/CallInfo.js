@@ -3,8 +3,9 @@ import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
 import { useColorModeValue } from '@chakra-ui/system';
 
-// Custom components
 import Card from 'components/card/Card';
+import Alert from 'components/alert/alert';
+import { useForm } from 'react-hook-form';
 import {
     Button,
     ButtonGroup,
@@ -13,14 +14,12 @@ import {
     FormLabel,
     Input,
     InputGroup,
-    Link,
     Select,
     Spacer,
     Text,
 } from '@chakra-ui/react';
 import { ArrowForwardIcon } from '@chakra-ui/icons';
 import { MdOutlineGpsFixed } from 'react-icons/md';
-
 import { CreatableSelect } from 'chakra-react-select';
 
 const stateOptions = [
@@ -84,6 +83,7 @@ const stateOptions = [
     { value: 'WI', label: 'Wisconsin' },
     { value: 'WY', label: 'Wyoming' },
 ];
+
 let stompClient = null;
 
 export default function CallInfo() {
@@ -136,6 +136,22 @@ export default function CallInfo() {
             bookingTime,
         });
         console.log(packageInfo);
+    };
+    const [showAlert, setShowAlert] = useState(false);
+    const handleClose = () => {
+        setShowAlert(false);
+    };
+    const errorAlert = {
+        type: 'succeed',
+        show: showAlert,
+        message: 'Thông tin đặt xe đã được chuyển sang bộ phận định vị GPS',
+        handleClose: handleClose,
+        redirect: '#',
+    };
+    const { reset } = useForm();
+    const handleGPS = () => {
+        setShowAlert(true);
+        reset();
     };
     useEffect(() => {
         const socket = new SockJS('http://localhost:8080/ws');
@@ -428,8 +444,10 @@ export default function CallInfo() {
                         mb='40px'
                         mt='24px'
                         leftIcon={<MdOutlineGpsFixed />}
+                        onClick={handleGPS}
                     >
-                        <Link href='/gps'>Định vị GPS</Link>
+                        Định vị GPS
+                        {showAlert ? <Alert {...errorAlert} /> : null}
                     </Button>
                     <ButtonGroup w={'100%'} spacing='6'>
                         <Button

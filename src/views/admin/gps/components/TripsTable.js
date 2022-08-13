@@ -20,14 +20,12 @@ import {
 // Custom components
 import Card from 'components/card/Card';
 import Menu from 'components/menu/MainMenu';
-
-export default function TaxisTable(props) {
+export default function TripsTable(props) {
     const { columnsData, tableData } = props;
 
     const columns = useMemo(() => columnsData, [columnsData]);
     const data = useMemo(() => tableData, [tableData]);
-    console.log(columns);
-    console.log(data);
+
     const tableInstance = useTable(
         {
             columns,
@@ -46,13 +44,13 @@ export default function TaxisTable(props) {
         prepareRow,
         initialState,
     } = tableInstance;
-    initialState.pageSize = 10;
+    initialState.pageSize = 5;
 
     const textColor = useColorModeValue('secondaryGray.900', 'white');
     const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
     return (
         <Card
-            direction='column'
+            // direction='column'
             w='100%'
             px='0px'
             overflowX={{ sm: 'scroll', lg: 'hidden' }}
@@ -64,7 +62,7 @@ export default function TaxisTable(props) {
                     fontWeight='700'
                     lineHeight='100%'
                 >
-                    Danh sách xe taxi
+                    Danh sách đặt xe
                 </Text>
                 <Menu />
             </Flex>
@@ -106,7 +104,7 @@ export default function TaxisTable(props) {
                             <Tr {...row.getRowProps()} key={index}>
                                 {row.cells.map((cell, index) => {
                                     let data = '';
-                                    if (cell.column.Header === 'MÃ XE') {
+                                    if (cell.column.Header === 'Cuộc gọi từ') {
                                         data = (
                                             <Flex align='center'>
                                                 <Text
@@ -119,7 +117,7 @@ export default function TaxisTable(props) {
                                             </Flex>
                                         );
                                     } else if (
-                                        cell.column.Header === 'LOẠI XE'
+                                        cell.column.Header === 'Tên khách hàng'
                                     ) {
                                         data = (
                                             <Flex align='center'>
@@ -129,37 +127,45 @@ export default function TaxisTable(props) {
                                                     fontSize='sm'
                                                     fontWeight='700'
                                                 >
-                                                    {cell.value}%
-                                                </Text>
-                                            </Flex>
-                                        );
-                                    } else if (
-                                        cell.column.Header === 'CHỖ NGỒI'
-                                    ) {
-                                        data = (
-                                            <Flex align='center'>
-                                                <Text
-                                                    color={textColor}
-                                                    fontSize='sm'
-                                                    fontWeight='700'
-                                                >
                                                     {cell.value}
                                                 </Text>
                                             </Flex>
                                         );
                                     } else if (
-                                        cell.column.Header === 'BIỂN SỐ XE'
+                                        cell.column.Header === 'Loại xe'
                                     ) {
                                         data = (
-                                            <Flex align='center'>
-                                                <Text
-                                                    color={textColor}
-                                                    fontSize='sm'
-                                                    fontWeight='700'
-                                                >
-                                                    {cell.value}
-                                                </Text>
-                                            </Flex>
+                                            <Text
+                                                color={textColor}
+                                                fontSize='sm'
+                                                fontWeight='700'
+                                            >
+                                                {cell.value}
+                                            </Text>
+                                        );
+                                    } else if (
+                                        cell.column.Header === 'Địa chỉ đón'
+                                    ) {
+                                        data = (
+                                            <Text
+                                                color={textColor}
+                                                fontSize='sm'
+                                                fontWeight='700'
+                                            >
+                                                {cell.value}
+                                            </Text>
+                                        );
+                                    } else if (
+                                        cell.column.Header === 'Địa chỉ đến'
+                                    ) {
+                                        data = (
+                                            <Text
+                                                color={textColor}
+                                                fontSize='sm'
+                                                fontWeight='700'
+                                            >
+                                                {cell.value}
+                                            </Text>
                                         );
                                     }
                                     return (

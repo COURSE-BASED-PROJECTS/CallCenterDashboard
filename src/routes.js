@@ -10,10 +10,10 @@ import {
 } from 'react-icons/md';
 
 // Admin Imports
-import MainDashboard from 'views/admin/default';
-import NFTMarketplace from 'views/admin/marketplace';
-import Profile from 'views/admin/profile';
-import DataTables from 'views/admin/dataTables';
+import RequestForm from 'views/admin/information';
+import TripList from 'views/admin/trips';
+import GPSCoordinates from 'views/admin/gps';
+import Overview from 'views/admin/overview';
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
@@ -22,7 +22,7 @@ const routes = [
     {
         name: 'Tiếp nhận thông tin',
         layout: '/admin',
-        path: '/default',
+        path: '/information',
         icon: (
             <Icon
                 as={MdOutlinePhoneCallback}
@@ -31,10 +31,10 @@ const routes = [
                 color='inherit'
             />
         ),
-        component: MainDashboard,
+        component: RequestForm,
     },
     {
-        name: 'Thông tin chuyến xe',
+        name: 'Danh sách đặt xe',
         layout: '/admin',
         path: '/trips',
         icon: (
@@ -45,7 +45,7 @@ const routes = [
                 color='inherit'
             />
         ),
-        component: NFTMarketplace,
+        component: TripList,
         secondary: true,
     },
     {
@@ -60,12 +60,12 @@ const routes = [
                 color='inherit'
             />
         ),
-        component: DataTables,
+        component: GPSCoordinates,
     },
     {
         name: 'Quản lý hệ thống',
         layout: '/admin',
-        path: '/manager',
+        path: '/overview',
         icon: (
             <Icon
                 as={MdOutlineAdminPanelSettings}
@@ -74,7 +74,7 @@ const routes = [
                 color='inherit'
             />
         ),
-        component: Profile,
+        component: Overview,
     },
     {
         name: 'Đăng nhập',
