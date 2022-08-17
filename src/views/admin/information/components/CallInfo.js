@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
 import { useColorModeValue } from '@chakra-ui/system';
+import { v4 as uuidv4 } from 'uuid';
 
 import Card from 'components/card/Card';
 import Alert from 'components/alert/alert';
@@ -92,8 +93,8 @@ export default function CallInfo() {
     const [packageInfo, setPackageInfo] = useState(null);
     const [phoneNumber, setPhoneNumber] = useState('');
     const [cusName, setCusNumber] = useState('');
-    const [arrivingAddr, setArrivingAddr] = useState('');
-    const [pickingAddr, setPickingAddr] = useState('');
+    const [arrivingAddress, setArrivingAddress] = useState('');
+    const [pickingAddress, setPickingAddress] = useState('');
     const [lngPicking, setLngPicking] = useState('');
     const [latPicking, setLatPicking] = useState('');
     const [lngArriving, setLngArriving] = useState('');
@@ -107,11 +108,11 @@ export default function CallInfo() {
 
     const handlePhoneNumber = (e) => setPhoneNumber(e.target.value);
     const handleCusName = (e) => setCusNumber(e.target.value);
-    const handleArrivingAddr = (address = null, actionMeta = null) => {
-        setArrivingAddr(address.label);
+    const handleArrivingAddress = (address = null, actionMeta = null) => {
+        setArrivingAddress(address.value);
     };
-    const handlePickingAddr = (address = null, actionMeta = null) => {
-        setPickingAddr(address.label);
+    const handlePickingAddress = (address = null, actionMeta = null) => {
+        setPickingAddress(address.value);
     };
     const handleLngPicking = (e) => setLngPicking(e.target.value);
     const handleLatPicking = (e) => setLatPicking(e.target.value);
@@ -123,8 +124,8 @@ export default function CallInfo() {
         setPackageInfo({
             phoneNumber,
             cusName,
-            arrivingAddr,
-            pickingAddr,
+            arrivingAddress,
+            pickingAddress,
             lngPicking,
             latPicking,
             lngArriving,
@@ -141,7 +142,7 @@ export default function CallInfo() {
     const handleClose = () => {
         setShowAlert(false);
     };
-    const errorAlert = {
+    const alert = {
         type: 'succeed',
         show: showAlert,
         message: 'Thông tin đặt xe đã được chuyển sang bộ phận định vị GPS',
@@ -179,32 +180,40 @@ export default function CallInfo() {
     useEffect(() => {
         if (packageInfo && !isSent) {
             stompClient.send(
-                '/app/order.sendOrder',
+                '/app/order.getOrder',
                 {},
                 JSON.stringify({
                     sender: 'call_center',
-                    phoneNumber: phoneNumber,
-                    cusName: cusName,
-                    arrivingAddress: arrivingAddr,
-                    pickingAddress: pickingAddr,
-                    lngPickingAddr: lngPicking,
-                    latPickingAddr: latPicking,
-                    lngArrivingAddr: lngArriving,
-                    latArrivingAddr: latArriving,
-                    carType: carType,
-                    distance: distance,
-                    duration: duration,
-                    cost: cost,
-                    bookingTime: bookingTime,
-                    type: 'SENT',
+                    idHailing: uuidv4(),
+                    idDriver: null,
+                    idClient: phoneNumber,
+                    hailing: {
+                        locationStart: {
+                            latitude: latPicking,
+                            longitude: lngPicking,
+                            name: pickingAddress,
+                        },
+                        locationEnd: {
+                            latitude: latArriving,
+                            longitude: lngArriving,
+                            name: arrivingAddress,
+                        },
+                        distance: distance,
+                        timeDuring: duration,
+                        timeStart: bookingTime,
+                        cost: cost,
+                        carType: carType,
+                    },
+                    status: 'SENT',
+                    scope: ['callcenter'],
                 })
             );
         }
     }, [
         phoneNumber,
         cusName,
-        arrivingAddr,
-        pickingAddr,
+        arrivingAddress,
+        pickingAddress,
         lngPicking,
         latPicking,
         lngArriving,
@@ -217,15 +226,11 @@ export default function CallInfo() {
         isSent,
         packageInfo,
     ]);
+
     return (
-        <Card
-            direction='column'
-            w='100%'
-            px='2%'
-            overflowX={{ sm: 'scroll', lg: 'hidden' }}
-        >
+        <Card direction='column' w='100%' px='2%' overflowX={{ sm: 'scroll', lg: 'hidden' }}>
             <Flex
-                zIndex='2'
+                zIndex='1'
                 direction='column'
                 maxW='100%'
                 background='transparent'
@@ -236,14 +241,7 @@ export default function CallInfo() {
             >
                 <FormControl isRequired>
                     <InputGroup mb='15px' width={'70%'}>
-                        <Text
-                            width={'20%'}
-                            color='green.500'
-                            fontSize='md'
-                            fontWeight='700'
-                            mt='13px'
-                            mr='0.5em'
-                        >
+                        <Text width={'20%'} color='green.500' fontSize='md' fontWeight='700' mt='13px' mr='0.5em'>
                             Cuộc gọi từ
                         </Text>
                         <Input
@@ -261,14 +259,7 @@ export default function CallInfo() {
                         />
                     </InputGroup>
 
-                    <FormLabel
-                        display='flex'
-                        ms='4px'
-                        fontSize='md'
-                        fontWeight='600'
-                        color={textColor}
-                        mb='8px'
-                    >
+                    <FormLabel display='flex' ms='4px' fontSize='md' fontWeight='600' color={textColor} mb='8px'>
                         Tên khách hàng
                     </FormLabel>
 
@@ -289,14 +280,7 @@ export default function CallInfo() {
                         />
                         <Spacer />
 
-                        <FormLabel
-                            me='14px'
-                            mt='11px'
-                            fontSize='md'
-                            fontWeight='600'
-                            color={textColor}
-                            display='flex'
-                        >
+                        <FormLabel me='14px' mt='11px' fontSize='md' fontWeight='600' color={textColor} display='flex'>
                             Loại xe
                         </FormLabel>
 
@@ -313,14 +297,7 @@ export default function CallInfo() {
                         </Select>
                     </Flex>
 
-                    <FormLabel
-                        ms='4px'
-                        mt='8px'
-                        fontSize='md'
-                        fontWeight='600'
-                        color={textColor}
-                        display='flex'
-                    >
+                    <FormLabel ms='4px' mt='8px' fontSize='md' fontWeight='600' color={textColor} display='flex'>
                         Địa chỉ đón
                     </FormLabel>
 
@@ -330,20 +307,12 @@ export default function CallInfo() {
                         size='lg'
                         fontWeight={'bold'}
                         fontSize='lg'
-                        onChange={handlePickingAddr}
-                        options={stateOptions}
+                        onChange={handlePickingAddress}
+                        // options={stateOptions}
                         formatCreateLabel={(value) => `+ Thêm mới ${value}`}
                     ></CreatableSelect>
 
-                    <Text
-                        mt='10px'
-                        ms='4px'
-                        mb='4px'
-                        fontSize='md'
-                        fontWeight='600'
-                        color='green.500'
-                        display='flex'
-                    >
+                    <Text mt='10px' ms='4px' mb='4px' fontSize='md' fontWeight='600' color='green.500' display='flex'>
                         GPS
                     </Text>
                     <Flex mb='30px'>
@@ -372,13 +341,7 @@ export default function CallInfo() {
                             onChange={handleLatPicking}
                         />
                     </Flex>
-                    <FormLabel
-                        ms='4px'
-                        fontSize='md'
-                        fontWeight='600'
-                        color={textColor}
-                        display='flex'
-                    >
+                    <FormLabel ms='4px' fontSize='md' fontWeight='600' color={textColor} display='flex'>
                         Địa chỉ đến
                     </FormLabel>
 
@@ -393,20 +356,12 @@ export default function CallInfo() {
                         size='lg'
                         fontWeight={'bold'}
                         fontSize='lg'
-                        onChange={handleArrivingAddr}
-                        options={stateOptions}
+                        onChange={handleArrivingAddress}
+                        // options={stateOptions}
                         formatCreateLabel={(value) => `+ Thêm mới ${value}`}
                     ></CreatableSelect>
 
-                    <Text
-                        mt='10px'
-                        ms='4px'
-                        mb='4px'
-                        fontSize='md'
-                        fontWeight='600'
-                        color='green.500'
-                        display='flex'
-                    >
+                    <Text mt='10px' ms='4px' mb='4px' fontSize='md' fontWeight='600' color='green.500' display='flex'>
                         GPS
                     </Text>
 
@@ -447,17 +402,10 @@ export default function CallInfo() {
                         onClick={handleGPS}
                     >
                         Định vị GPS
-                        {showAlert ? <Alert {...errorAlert} /> : null}
+                        {showAlert ? <Alert {...alert} /> : null}
                     </Button>
                     <ButtonGroup w={'100%'} spacing='6'>
-                        <Button
-                            fontSize='20px'
-                            variant='outline'
-                            fontWeight='bold'
-                            w='100%'
-                            h='50'
-                            mb='24px'
-                        >
+                        <Button fontSize='20px' variant='outline' fontWeight='bold' w='100%' h='50' mb='24px'>
                             Huỷ
                         </Button>
                         <Button
