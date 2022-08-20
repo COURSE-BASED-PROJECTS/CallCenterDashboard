@@ -1,25 +1,6 @@
-import {
-    Avatar,
-    Box,
-    Button,
-    Flex,
-    Progress,
-    Table,
-    Tbody,
-    Td,
-    Text,
-    Th,
-    Thead,
-    Tr,
-    useColorModeValue,
-} from '@chakra-ui/react';
+import { Avatar, Button, Flex, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue } from '@chakra-ui/react';
 import React, { useMemo } from 'react';
-import {
-    useGlobalFilter,
-    usePagination,
-    useSortBy,
-    useTable,
-} from 'react-table';
+import { useGlobalFilter, usePagination, useSortBy, useTable } from 'react-table';
 
 function TopCreatorTable(props) {
     const { columnsData, tableData } = props;
@@ -37,19 +18,14 @@ function TopCreatorTable(props) {
         usePagination
     );
 
-    const { getTableProps, getTableBodyProps, headerGroups, page, prepareRow } =
-        tableInstance;
+    const { getTableProps, getTableBodyProps, headerGroups, page, prepareRow } = tableInstance;
 
     const textColor = useColorModeValue('navy.700', 'white');
     const textColorSecondary = useColorModeValue('secondaryGray.600', 'white');
 
     return (
         <>
-            <Flex
-                direction='column'
-                w='100%'
-                overflowX={{ sm: 'scroll', lg: 'hidden' }}
-            >
+            <Flex direction='column' w='100%' overflowX={{ sm: 'scroll', lg: 'hidden' }}>
                 <Flex
                     align={{ sm: 'flex-start', lg: 'center' }}
                     justify='space-between'
@@ -67,15 +43,10 @@ function TopCreatorTable(props) {
                 <Table {...getTableProps()} variant='simple' color='gray.500'>
                     <Thead>
                         {headerGroups.map((headerGroup, index) => (
-                            <Tr
-                                {...headerGroup.getHeaderGroupProps()}
-                                key={index}
-                            >
+                            <Tr {...headerGroup.getHeaderGroupProps()} key={index}>
                                 {headerGroup.headers.map((column, index) => (
                                     <Th
-                                        {...column.getHeaderProps(
-                                            column.getSortByToggleProps()
-                                        )}
+                                        {...column.getHeaderProps(column.getSortByToggleProps())}
                                         pe='10px'
                                         key={index}
                                         borderColor='transparent'
@@ -107,30 +78,15 @@ function TopCreatorTable(props) {
                                         if (cell.column.Header === 'Số điện thoại') {
                                             data = (
                                                 <Flex align='center'>
-                                                    <Avatar
-                                                        src={cell.value[1]}
-                                                        w='30px'
-                                                        h='30px'
-                                                        me='8px'
-                                                    />
-                                                    <Text
-                                                        color={textColor}
-                                                        fontSize='sm'
-                                                        fontWeight='600'
-                                                    >
+                                                    <Avatar src={cell.value[1]} w='30px' h='30px' me='8px' />
+                                                    <Text color={textColor} fontSize='sm' fontWeight='600'>
                                                         {cell.value[0]}
                                                     </Text>
                                                 </Flex>
                                             );
-                                        } else if (
-                                            cell.column.Header === 'Thời gian gọi'
-                                        ) {
+                                        } else if (cell.column.Header === 'Thời gian gọi') {
                                             data = (
-                                                <Text
-                                                    color={textColorSecondary}
-                                                    fontSize='sm'
-                                                    fontWeight='500'
-                                                >
+                                                <Text color={textColorSecondary} fontSize='sm' fontWeight='500'>
                                                     {cell.value}
                                                 </Text>
                                             );

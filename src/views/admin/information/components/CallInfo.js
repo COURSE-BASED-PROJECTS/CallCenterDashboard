@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
-import { useColorModeValue } from '@chakra-ui/system';
-import { v4 as uuidv4 } from 'uuid';
 
 import Card from 'components/card/Card';
 import Alert from 'components/alert/alert';
-import { useForm } from 'react-hook-form';
+import { MdOutlineGpsFixed } from 'react-icons/md';
+
 import {
     Button,
     ButtonGroup,
@@ -19,78 +18,23 @@ import {
     Spacer,
     Text,
 } from '@chakra-ui/react';
+import { useColorModeValue } from '@chakra-ui/system';
 import { ArrowForwardIcon } from '@chakra-ui/icons';
-import { MdOutlineGpsFixed } from 'react-icons/md';
 import { CreatableSelect } from 'chakra-react-select';
 
-const stateOptions = [
-    { value: 'AL', label: 'Alabama' },
-    { value: 'AK', label: 'Alaska' },
-    { value: 'AS', label: 'American Samoa' },
-    { value: 'AZ', label: 'Arizona' },
-    { value: 'AR', label: 'Arkansas' },
-    { value: 'CA', label: 'California' },
-    { value: 'CO', label: 'Colorado' },
-    { value: 'CT', label: 'Connecticut' },
-    { value: 'DE', label: 'Delaware' },
-    { value: 'DC', label: 'District Of Columbia' },
-    { value: 'FM', label: 'Federated States Of Micronesia' },
-    { value: 'FL', label: 'Florida' },
-    { value: 'GA', label: 'Georgia' },
-    { value: 'GU', label: 'Guam' },
-    { value: 'HI', label: 'Hawaii' },
-    { value: 'ID', label: 'Idaho' },
-    { value: 'IL', label: 'Illinois' },
-    { value: 'IN', label: 'Indiana' },
-    { value: 'IA', label: 'Iowa' },
-    { value: 'KS', label: 'Kansas' },
-    { value: 'KY', label: 'Kentucky' },
-    { value: 'LA', label: 'Louisiana' },
-    { value: 'ME', label: 'Maine' },
-    { value: 'MH', label: 'Marshall Islands' },
-    { value: 'MD', label: 'Maryland' },
-    { value: 'MA', label: 'Massachusetts' },
-    { value: 'MI', label: 'Michigan' },
-    { value: 'MN', label: 'Minnesota' },
-    { value: 'MS', label: 'Mississippi' },
-    { value: 'MO', label: 'Missouri' },
-    { value: 'MT', label: 'Montana' },
-    { value: 'NE', label: 'Nebraska' },
-    { value: 'NV', label: 'Nevada' },
-    { value: 'NH', label: 'New Hampshire' },
-    { value: 'NJ', label: 'New Jersey' },
-    { value: 'NM', label: 'New Mexico' },
-    { value: 'NY', label: 'New York' },
-    { value: 'NC', label: 'North Carolina' },
-    { value: 'ND', label: 'North Dakota' },
-    { value: 'MP', label: 'Northern Mariana Islands' },
-    { value: 'OH', label: 'Ohio' },
-    { value: 'OK', label: 'Oklahoma' },
-    { value: 'OR', label: 'Oregon' },
-    { value: 'PW', label: 'Palau' },
-    { value: 'PA', label: 'Pennsylvania' },
-    { value: 'PR', label: 'Puerto Rico' },
-    { value: 'RI', label: 'Rhode Island' },
-    { value: 'SC', label: 'South Carolina' },
-    { value: 'SD', label: 'South Dakota' },
-    { value: 'TN', label: 'Tennessee' },
-    { value: 'TX', label: 'Texas' },
-    { value: 'UT', label: 'Utah' },
-    { value: 'VT', label: 'Vermont' },
-    { value: 'VI', label: 'Virgin Islands' },
-    { value: 'VA', label: 'Virginia' },
-    { value: 'WA', label: 'Washington' },
-    { value: 'WV', label: 'West Virginia' },
-    { value: 'WI', label: 'Wisconsin' },
-    { value: 'WY', label: 'Wyoming' },
-];
+import { Location } from '../variables/data';
+import axios from 'axios';
+import { distanceAPI } from '../../../../service/API';
+import calCostTrip from 'utils/calCostTrip';
 
 let stompClient = null;
 
 export default function CallInfo() {
+    const [statusFetchData, setStatusFetchData] = useState('idle');
+    const [listOfAddress, setListOfAddress] = useState(null);
+
     const textColor = useColorModeValue('secondaryGray.900', 'white');
 
-    const [packageInfo, setPackageInfo] = useState(null);
     const [phoneNumber, setPhoneNumber] = useState('');
     const [cusName, setCusNumber] = useState('');
     const [arrivingAddress, setArrivingAddress] = useState('');
@@ -102,17 +46,18 @@ export default function CallInfo() {
     const [carType, setCarType] = useState('');
     const [distance, setDistance] = useState(0);
     const [duration, setDuration] = useState(0);
-    const [cost, setCost] = useState(0);
-    const [bookingTime, setBookingTime] = useState(new Date());
-    const [isSent, setIsSent] = useState(false);
 
     const handlePhoneNumber = (e) => setPhoneNumber(e.target.value);
     const handleCusName = (e) => setCusNumber(e.target.value);
     const handleArrivingAddress = (address = null, actionMeta = null) => {
         setArrivingAddress(address.value);
+        setLngArriving(address.GPS.longitude);
+        setLatArriving(address.GPS.latitude);
     };
     const handlePickingAddress = (address = null, actionMeta = null) => {
         setPickingAddress(address.value);
+        setLatPicking(address.GPS.latitude);
+        setLngPicking(address.GPS.longitude);
     };
     const handleLngPicking = (e) => setLngPicking(e.target.value);
     const handleLatPicking = (e) => setLatPicking(e.target.value);
@@ -120,24 +65,73 @@ export default function CallInfo() {
     const handleLatArriving = (e) => setLatArriving(e.target.value);
     const handleCarType = (e) => setCarType(e.target.value);
 
+    const [fetchDistance, setFetchDistance] = useState(false);
+    useEffect(() => {
+        // calculate the distance between 2 places
+        if (!fetchDistance && latArriving && latPicking && lngArriving && lngPicking) {
+            console.log(fetchDistance);
+
+            axios
+                .get(distanceAPI, {
+                    params: {
+                        origin: lngPicking + ',' + latPicking,
+                        destination: lngArriving + ',' + latArriving,
+                        vehicle: 'car',
+                        api_key: GOONG_REST_API,
+                    },
+                })
+                .then(function (response) {
+                    if (response.status === 200) {
+                        const dataTravel = response.data.routes[0].legs[0];
+
+                        setDistance(dataTravel.distance.value);
+                        setDuration(dataTravel.duration.value);
+
+                        setFetchDistance(true);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                })
+                .then(function () {
+                    // always executed
+                });
+        }
+    }, [distance, latArriving, latPicking, lngArriving, lngPicking, carType, fetchDistance]);
+
     const handleOnSubmit = () => {
-        setPackageInfo({
-            phoneNumber,
-            cusName,
-            arrivingAddress,
-            pickingAddress,
-            lngPicking,
-            latPicking,
-            lngArriving,
-            latArriving,
-            carType,
-            distance,
-            duration,
-            cost,
-            bookingTime,
-        });
-        console.log(packageInfo);
+        const packageHailing = {
+            idHailing: null,
+            idDriver: null,
+            idClient: phoneNumber,
+            hailing: {
+                locationStart: {
+                    latitude: latPicking,
+                    longitude: lngPicking,
+                    name: pickingAddress,
+                },
+                locationEnd: {
+                    latitude: latArriving,
+                    longitude: lngArriving,
+                    name: arrivingAddress,
+                },
+                distance: distance,
+                timeDuring: duration,
+                timeStart: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, -1),
+                cost: parseInt(calCostTrip(distance, 0.26 * parseInt(carType))),
+                carType: carType,
+            },
+            status: 'SENT',
+            scope: ['callcenter'],
+        };
+
+        console.log(packageHailing);
+
+        if (stompClient !== null) {
+            stompClient.send('/app/order.getOrder', {}, JSON.stringify(packageHailing));
+        }
     };
+
     const [showAlert, setShowAlert] = useState(false);
     const handleClose = () => {
         setShowAlert(false);
@@ -149,11 +143,11 @@ export default function CallInfo() {
         handleClose: handleClose,
         redirect: '#',
     };
-    const { reset } = useForm();
     const handleGPS = () => {
         setShowAlert(true);
-        reset();
     };
+
+    // connect the socket service
     useEffect(() => {
         const socket = new SockJS('http://localhost:8080/ws');
         stompClient = Stomp.over(socket);
@@ -177,55 +171,26 @@ export default function CallInfo() {
         const message = JSON.parse(payload.body);
         console.log(message);
     };
+
     useEffect(() => {
-        if (packageInfo && !isSent) {
-            stompClient.send(
-                '/app/order.getOrder',
-                {},
-                JSON.stringify({
-                    sender: 'call_center',
-                    idHailing: uuidv4(),
-                    idDriver: null,
-                    idClient: phoneNumber,
-                    hailing: {
-                        locationStart: {
-                            latitude: latPicking,
-                            longitude: lngPicking,
-                            name: pickingAddress,
-                        },
-                        locationEnd: {
-                            latitude: latArriving,
-                            longitude: lngArriving,
-                            name: arrivingAddress,
-                        },
-                        distance: distance,
-                        timeDuring: duration,
-                        timeStart: bookingTime,
-                        cost: cost,
-                        carType: carType,
-                    },
-                    status: 'SENT',
-                    scope: ['callcenter'],
-                })
-            );
+        if (statusFetchData !== 'successed') {
+            if (Location && statusFetchData !== 'successed') {
+                setListOfAddress(getListOfName());
+                setStatusFetchData('successed');
+            }
         }
-    }, [
-        phoneNumber,
-        cusName,
-        arrivingAddress,
-        pickingAddress,
-        lngPicking,
-        latPicking,
-        lngArriving,
-        latArriving,
-        carType,
-        distance,
-        duration,
-        cost,
-        bookingTime,
-        isSent,
-        packageInfo,
-    ]);
+    }, []);
+    function getListOfName() {
+        let names = [];
+        Location.map((subitem) =>
+            names.push({
+                value: subitem.location_name,
+                label: subitem.location_name,
+                GPS: { latitude: subitem.latitude, longitude: subitem.longitude },
+            })
+        );
+        return names;
+    }
 
     return (
         <Card direction='column' w='100%' px='2%' overflowX={{ sm: 'scroll', lg: 'hidden' }}>
@@ -308,7 +273,7 @@ export default function CallInfo() {
                         fontWeight={'bold'}
                         fontSize='lg'
                         onChange={handlePickingAddress}
-                        // options={stateOptions}
+                        options={listOfAddress}
                         formatCreateLabel={(value) => `+ Thêm mới ${value}`}
                     ></CreatableSelect>
 
@@ -357,7 +322,7 @@ export default function CallInfo() {
                         fontWeight={'bold'}
                         fontSize='lg'
                         onChange={handleArrivingAddress}
-                        // options={stateOptions}
+                        options={listOfAddress}
                         formatCreateLabel={(value) => `+ Thêm mới ${value}`}
                     ></CreatableSelect>
 
