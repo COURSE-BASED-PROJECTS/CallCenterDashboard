@@ -1,4 +1,4 @@
-export const tableColumnsTopCreators = [
+export const tableColumnsTopHailing = [
     {
         Header: 'Số điện thoại',
         accessor: 'name',

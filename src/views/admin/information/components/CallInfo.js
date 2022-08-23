@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
+import { v4 as uuidv4 } from 'uuid';
 
 import Card from 'components/card/Card';
 import Alert from 'components/alert/alert';
@@ -22,18 +23,25 @@ import { useColorModeValue } from '@chakra-ui/system';
 import { ArrowForwardIcon } from '@chakra-ui/icons';
 import { CreatableSelect } from 'chakra-react-select';
 
-import { Location } from '../variables/data';
 import axios from 'axios';
-import { distanceAPI } from '../../../../service/API';
+import { distanceAPI, driverAPI } from '../../../../service/API';
 import calCostTrip from 'utils/calCostTrip';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectStatusFetchLocations, selectLocations, fetchLocations } from 'store/slices/locationSlice';
+import { setStatusPackage } from 'store/slices/hailingSlice';
+import { setTravelInfomation } from 'store/slices/hailingSlice';
+
+const GOONG_REST_API = '';
 
 let stompClient = null;
 
 export default function CallInfo() {
-    const [statusFetchData, setStatusFetchData] = useState('idle');
-    const [listOfAddress, setListOfAddress] = useState(null);
-
+    const dispatch = useDispatch();
     const textColor = useColorModeValue('secondaryGray.900', 'white');
+
+    // fetch LOCATION
+    const statusFetchLocations = useSelector(selectStatusFetchLocations);
+    const locations = useSelector(selectLocations);
 
     const [phoneNumber, setPhoneNumber] = useState('');
     const [cusName, setCusNumber] = useState('');
@@ -65,17 +73,39 @@ export default function CallInfo() {
     const handleLatArriving = (e) => setLatArriving(e.target.value);
     const handleCarType = (e) => setCarType(e.target.value);
 
+    // dispatch the list of locations
+    const [listOfAddress, setListOfAddress] = useState(null);
+    function getListOfName(listAddress) {
+        let names = [];
+        listAddress.map((subitem) =>
+            names.push({
+                value: subitem.location_name,
+                label: subitem.location_name,
+                GPS: { latitude: subitem.latitude, longitude: subitem.longitude },
+            })
+        );
+        return names;
+    }
+    useEffect(() => {
+        if (statusFetchLocations === 'idle') {
+            dispatch(fetchLocations());
+        }
+        if (locations && !listOfAddress) {
+            setListOfAddress(getListOfName(locations));
+        }
+    }, [statusFetchLocations, locations, dispatch, listOfAddress]);
+
+    // calculate the distance between 2 places
     const [fetchDistance, setFetchDistance] = useState(false);
     useEffect(() => {
-        // calculate the distance between 2 places
-        if (!fetchDistance && latArriving && latPicking && lngArriving && lngPicking) {
+        if (!fetchDistance && latArriving && latPicking && lngArriving && lngPicking && carType) {
             console.log(fetchDistance);
 
             axios
                 .get(distanceAPI, {
                     params: {
-                        origin: lngPicking + ',' + latPicking,
-                        destination: lngArriving + ',' + latArriving,
+                        origin: latPicking + ',' + lngPicking,
+                        destination: latArriving + ',' + lngArriving,
                         vehicle: 'car',
                         api_key: GOONG_REST_API,
                     },
@@ -99,39 +129,40 @@ export default function CallInfo() {
         }
     }, [distance, latArriving, latPicking, lngArriving, lngPicking, carType, fetchDistance]);
 
-    const handleOnSubmit = () => {
-        const packageHailing = {
-            idHailing: null,
-            idDriver: null,
-            idClient: phoneNumber,
-            hailing: {
-                locationStart: {
-                    latitude: latPicking,
-                    longitude: lngPicking,
-                    name: pickingAddress,
-                },
-                locationEnd: {
-                    latitude: latArriving,
-                    longitude: lngArriving,
-                    name: arrivingAddress,
-                },
-                distance: distance,
-                timeDuring: duration,
-                timeStart: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, -1),
-                cost: parseInt(calCostTrip(distance, 0.26 * parseInt(carType))),
-                carType: carType,
-            },
-            status: 'SENT',
-            scope: ['callcenter'],
-        };
+    // const handleOnSubmit = () => {
+    //     const packageHailing = {
+    //         idHailing: null,
+    //         idDriver: null,
+    //         idClient: phoneNumber,
+    //         hailing: {
+    //             locationStart: {
+    //                 latitude: latPicking,
+    //                 longitude: lngPicking,
+    //                 name: pickingAddress,
+    //             },
+    //             locationEnd: {
+    //                 latitude: latArriving,
+    //                 longitude: lngArriving,
+    //                 name: arrivingAddress,
+    //             },
+    //             distance: distance,
+    //             timeDuring: duration,
+    //             timeStart: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, -1),
+    //             cost: parseInt(calCostTrip(distance, 0.26 * parseInt(carType))),
+    //             carType: carType,
+    //         },
+    //         status: '',
+    //         scope: ['callcenter'],
+    //     };
 
-        console.log(packageHailing);
+    //     console.log(packageHailing);
 
-        if (stompClient !== null) {
-            stompClient.send('/app/order.getOrder', {}, JSON.stringify(packageHailing));
-        }
-    };
+    //     if (stompClient !== null) {
+    //         stompClient.send('/app/order.getOrder', {}, JSON.stringify(packageHailing));
+    //     }
+    // };
 
+    // Link to /gps
     const [showAlert, setShowAlert] = useState(false);
     const handleClose = () => {
         setShowAlert(false);
@@ -148,6 +179,7 @@ export default function CallInfo() {
     };
 
     // connect the socket service
+    const [showAlertSend, setShowAlertSend] = useState(false);
     useEffect(() => {
         const socket = new SockJS('http://localhost:8080/ws');
         stompClient = Stomp.over(socket);
@@ -159,7 +191,9 @@ export default function CallInfo() {
 
     const onConnected = () => {
         console.log('onConnected');
+        // Subscribe to the Public Topic
         stompClient.subscribe('/topic/public', onMessageReceived);
+        stompClient.subscribe('/topic/callcenter', onMessageReceivedPrivate);
     };
 
     const onError = (error) => {
@@ -172,28 +206,101 @@ export default function CallInfo() {
         console.log(message);
     };
 
-    useEffect(() => {
-        if (statusFetchData !== 'successed') {
-            if (Location && statusFetchData !== 'successed') {
-                setListOfAddress(getListOfName());
-                setStatusFetchData('successed');
+    const onMessageReceivedPrivate = (payload) => {
+        const message = JSON.parse(payload.body);
+        console.log(message);
+        if (message.status === 'no_driver') {
+            setTimeout(() => {
+                dispatch(setStatusPackage('Không tìm thấy tài xế!'));
+            }, 2000);
+            console.log(message.status);
+        } else if (message.status === 'have_driver') {
+            console.log(message.status);
+
+            if (message?.idDriver) {
+                axios
+                    .get(driverAPI + message?.idDriver)
+                    .then(function (res) {
+                        const driverInfo = res.data;
+                        console.log(driverInfo);
+                        if (driverInfo !== null && res.status === 200) {
+                            dispatch(
+                                setTravelInfomation({
+                                    ...message,
+                                    ...driverInfo,
+                                })
+                            );
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    })
+                    .then(function () {
+                        // always executed
+                    });
             }
+        } else if (message.status === 'end') {
+            setTimeout(() => {
+                dispatch(setStatusPackage('Chuyến đi kết thúc!'));
+            }, 2000);
+
+            setTimeout(() => {
+                dispatch(setTravelInfomation(null));
+                dispatch(setStatusPackage('Đang tìm tài xế...'));
+            }, 4000);
+            console.log(message.status);
         }
-    }, []);
-    function getListOfName() {
-        let names = [];
-        Location.map((subitem) =>
-            names.push({
-                value: subitem.location_name,
-                label: subitem.location_name,
-                GPS: { latitude: subitem.latitude, longitude: subitem.longitude },
-            })
-        );
-        return names;
-    }
+    };
+
+    // send to socket
+    const alertSend = {
+        type: 'succeed',
+        show: showAlertSend,
+        message: 'Đã chuyển tiếp thông tin đến server!',
+        handleClose: handleClose,
+        redirect: '#',
+    };
+
+    const handleOnSubmit = () => {
+        const packageHailing = {
+            idHailing: uuidv4(),
+            idDriver: null,
+            idClient: phoneNumber ?? '090',
+            hailing: {
+                locationStart: {
+                    latitude: latPicking ?? 0,
+                    longitude: lngPicking ?? 0,
+                    name: pickingAddress,
+                },
+                locationEnd: {
+                    latitude: latArriving ?? 0,
+                    longitude: lngArriving ?? 0,
+                    name: arrivingAddress,
+                },
+                distance: distance ?? 0,
+                carType: carType,
+                cost: parseInt(calCostTrip(distance, 0.26 * parseInt(carType))),
+                timeDuring: duration ?? 0,
+                timeStart: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, -1),
+            },
+            status: '',
+            scope: 'CALLCENTER',
+        };
+
+        console.log(packageHailing);
+
+        if (stompClient !== null) {
+            stompClient.send('/app/order.getOrder', {}, JSON.stringify(packageHailing));
+            setShowAlertSend(true);
+            setTimeout(() => {
+                setShowAlertSend(false);
+            }, 2000);
+        }
+    };
 
     return (
         <Card direction='column' w='100%' px='2%' overflowX={{ sm: 'scroll', lg: 'hidden' }}>
+            {showAlertSend ? <Alert {...alertSend} /> : null}
             <Flex
                 zIndex='1'
                 direction='column'

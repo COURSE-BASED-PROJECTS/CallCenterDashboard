@@ -34,7 +34,7 @@ const routes = [
         component: RequestForm,
     },
     {
-        name: 'Danh sách đặt xe',
+        name: 'Theo dõi chuyến đi',
         layout: '/admin',
         path: '/trips',
         icon: (

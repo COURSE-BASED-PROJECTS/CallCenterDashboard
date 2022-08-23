@@ -1,9 +1,12 @@
 import { Avatar, Button, Flex, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue } from '@chakra-ui/react';
 import React, { useMemo } from 'react';
 import { useGlobalFilter, usePagination, useSortBy, useTable } from 'react-table';
+import { tableColumnsTopHailing } from 'views/admin/information/variables/tableColumnsTopHailing';
+import  tableDataTopHailing  from 'views/admin/information/variables/tableDataTopHailing';
 
-function TopCreatorTable(props) {
-    const { columnsData, tableData } = props;
+function TopHailingTable() {
+    const columnsData = tableColumnsTopHailing;
+    const tableData = tableDataTopHailing;
 
     const columns = useMemo(() => columnsData, [columnsData]);
     const data = useMemo(() => tableData, [tableData]);
@@ -117,4 +120,4 @@ function TopCreatorTable(props) {
     );
 }
 
-export default TopCreatorTable;
+export default TopHailingTable;

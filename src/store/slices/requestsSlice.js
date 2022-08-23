@@ -1,14 +1,14 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const apiUrl = 'http://localhost:9090/api/request/callcenter';
+import { requestAPI } from 'service/API';
 
 export const fetchRequests = createAsyncThunk(
     'requests/fetchRequests',
     async () => {
         try {
-            console.log('CALL API: ' + apiUrl);
-            const response = await axios.get(apiUrl);
+            console.log('CALL API: ' + requestAPI);
+            const response = await axios.get(requestAPI);
             return [...response.data];
         } catch (error) {
             return error.message;
