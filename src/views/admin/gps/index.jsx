@@ -8,8 +8,7 @@ import {
     Text,
     useColorModeValue,
 } from '@chakra-ui/react';
-import Banner from 'components/card/Mastercard';
-import React, { useState } from 'react';
+import React from 'react';
 import Card from 'components/card/Card';
 import GoongMaps from 'components/goongmaps/GoongMaps';
 import TripsTable from './components/TripsTable';
@@ -18,7 +17,6 @@ import tableDataTrips from 'views/admin/gps/variables/tableDataTrips.json';
 
 export default function GPSCoordinates() {
     const textColor = useColorModeValue('secondaryGray.900', 'white');
-    const textColorBrand = useColorModeValue('brand.500', 'white');
     return (
         <Box pt={{ base: '180px', md: '80px', xl: '80px' }}>
             <Grid
@@ -36,14 +34,6 @@ export default function GPSCoordinates() {
                 >
                     <Card p='0px'>
                         <SimpleGrid>
-                            {/* <Text
-                                color={textColor}
-                                fontSize='2xl'
-                                ms='24px'
-                                fontWeight='700'
-                            >
-                                Danh sách đặt xe
-                            </Text> */}
                             <TripsTable
                                 columnsData={columnsTripsTable}
                                 tableData={tableDataTrips}

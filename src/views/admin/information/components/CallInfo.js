@@ -31,7 +31,7 @@ import { selectStatusFetchLocations, selectLocations, fetchLocations } from 'sto
 import { setStatusPackage } from 'store/slices/hailingSlice';
 import { setTravelInfomation } from 'store/slices/hailingSlice';
 
-const GOONG_REST_API = '';
+const GOONG_REST_API = 'KFTdMhy7LZUowl84Sj55fbXlVMvX6m3qHRFW3a0d';
 
 let stompClient = null;
 
